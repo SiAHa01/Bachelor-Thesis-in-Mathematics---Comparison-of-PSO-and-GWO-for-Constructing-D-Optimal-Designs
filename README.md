@@ -11,3 +11,6 @@ Included files:
 - `OptimalityCheck.py`: optimality verification routines
 - `PSOvsGWO.py`: comparison of PSO and GWO over repeated runs
 - `ResponseSimulation.py`: response simulation and parameter estimation study
+
+Thesis document:
+- Examensarbete C.pdf
