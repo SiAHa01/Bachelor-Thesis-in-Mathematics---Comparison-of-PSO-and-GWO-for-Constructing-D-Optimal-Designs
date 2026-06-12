@@ -1,5 +1,5 @@
 # Bachelor-Thesis-in-Mathematics---Comparison-of-PSO-and-GWO-for-Constructing-D-Optimal-Designs
-I am a student at Uppsala University who has written a bachelor thesis where the main objective was to compare the metaheuristic optimization algorithms ìParticle Swarm Optimizationî (PSO) and ìGrey Wolf Optimizerî (GWO) in terms of performance when constructing D-optimal designs in non-linear models.
+I am a student at Uppsala University who has written a bachelor thesis where the main objective was to compare the metaheuristic optimization algorithms ‚ÄúParticle Swarm Optimization‚Äù (PSO) and ‚ÄúGrey Wolf Optimizer‚Äù (GWO) in terms of performance when constructing D-optimal designs in non-linear models.
 
 # Code for Bachelor Thesis
 
@@ -9,5 +9,5 @@ Included files:
 - `Loc_D_Opt.py`: local D-optimal design search using PSO and GWO
 - `equivalence.py`: General Equivalence Theorem checks
 - `OptimalityCheck.py`: optimality verification routines
-- `PSOvsGWO_parallel.py`: comparison of PSO and GWO over repeated runs
+- `PSOvsGWO.py`: comparison of PSO and GWO over repeated runs
 - `ResponseSimulation.py`: response simulation and parameter estimation study
