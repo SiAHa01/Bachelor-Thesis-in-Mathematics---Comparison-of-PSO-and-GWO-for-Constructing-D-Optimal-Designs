@@ -634,7 +634,34 @@ Similar to PSO, we will initialize a population of candidate designs (wolves), e
 fitness using the same objective function (negative log determinant of the information 
 matrix), and iteratively update the positions of the wolves based on the positions of the 
 best wolves in the hierarchy (alpha, beta, delta) to converge towards the optimal design. 
-"""
+
+Wolves "encircle the prey" (the optimal design) using:
+
+    D = |C * X_leader - X|
+    X_new = X_leader - A * D
+
+Where:
+- X_leader is the position of the best wolf (alpha) or second-best (beta) or 
+  third-best (delta).
+- X is the current position of the wolf being updated.
+- A and C are coefficient vectors that control the movement towards the leader wolves,
+  with A decreasing over iterations to allow for exploration and exploitation:
+  
+    A = 2 * a * r1 - a   and   C = 2 * r2
+
+- r1, r2 ~ U[0, 1], random vectors for stochasticity in the movement
+- a decreases linearly from 2 to 0 over the course of iterations.
+
+Each wolf computes three candidate positions based on the alpha, beta, and delta wolves, 
+and then updates its position to the average of these three candidates:
+
+    X1 = X_alpha - A1 * D_alpha
+    X2 = X_beta - A2 * D_beta
+    X3 = X_delta - A3 * D_delta
+
+    X_new = (X1 + X2 + X3) / 3
+  """
+
 
 " Grey Wolf Optimizer (GWO) implementation "
 
