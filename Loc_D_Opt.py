@@ -188,7 +188,7 @@ Where:
 - f(x_i;θ) is the gradient vector evaluated at x_i, which we can compute using 
   the function F defined above.
 
-To compute M(ξ;θ), we can choose which gradient function to use based on the value of p 
+To compute I(ξ;θ), we can choose which gradient function to use based on the value of p 
 (number of parameters). Then, we compute f(x_i;θ), iterate over each support point x_i,
 and accumulate (sum) the weighted outer products w_i * f(x_i;θ) * f(x_i;θ)^T.
 """

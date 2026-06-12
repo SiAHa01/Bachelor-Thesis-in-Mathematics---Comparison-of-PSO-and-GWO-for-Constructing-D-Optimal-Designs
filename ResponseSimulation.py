@@ -45,10 +45,10 @@ sigma = np.sqrt(sigma2)
 n_sims = 1000
 
 # Sample size n for each study
-sample_sizes = [24, 48, 72, 96]  # Different sample sizes to analyze the effect of sample size on estimation quality
+sample_sizes = [48, 72, 96]  # Different sample sizes to analyze the effect of sample size on estimation quality
 
 
-### True parameter values:
+### True parameter values (Choose ONE):
 
 # For the Michaelis-Menten model (V, K)
 #theta = np.array([3, 0.5])  # Case 1: V=3, K=0.5 
@@ -89,7 +89,7 @@ Given an approximate design, support points and weights are specified as follows
     
 where k is the number of support points, xi is the dose level of the i-th support point, 
 and wi is the corresponding weight (proportion of total sample size allocated to that 
-point). But to generate data , we need an exact design, that is, a list of the actual
+point). But to generate data we need an exact design, that is, a list of the actual
 x-values repeated a certain number of times according to the weights and total sample size.
 """
 
@@ -200,7 +200,7 @@ The D-optimal design from PSO is compared to the following non-optimal designs w
 equidistant support points and homogeneous weights:
 
     - Non-optimal Scenario 1:   x = [0, x_max/2, x_max], w = [1/3, 1/3, 1/3]
-    - Non-optimal Scenario 2:   x = [0, x_max/4, 3*x_max/4, x_max], w = [1/4, 1/4, 1/4, 1/4]
+    - Non-optimal Scenario 2:   x = [0, x_max/3, 2*x_max/3, x_max], w = [1/4, 1/4, 1/4, 1/4]
 """
 
 
@@ -216,7 +216,7 @@ def nonoptimal_design(x_max, scenario):
                     scenario = 1:
                         x = [0, x_max/2, x_max], w = [1/3, 1/3, 1/3]
                     scenario = 2:
-                        x = [0, x_max/4, 3*x_max/4, x_max], w = [1/4, 1/4, 1/4, 1/4]
+                        x = [0, x_max/3, 2*x_max/3, x_max], w = [1/4, 1/4, 1/4, 1/4]
 
     Returns:
     x (array): Support points of the non-optimal design.
@@ -244,9 +244,8 @@ def nonoptimal_design(x_max, scenario):
 Given assumed true parameter θ and variance σ², we can simulate responses from the model 
 for a given design (support points and weights):
 
-                yj = η(xi; θ) + εj,   εj ~ N(0, σ²),   
-                
-                i = 1, ..., k where k is the number of support points, and
+                yj = η(xj; θ) + εj,   εj ~ N(0, σ²),   
+ 
                 j = 1, ..., n where n is the total sample size, and we 
                 have n observations distributed across the k support points according 
                 to the weights.
@@ -254,13 +253,13 @@ for a given design (support points and weights):
 Step by step:
 
     1. Compute the true mean response at each observation of support points:
-                μi = η(xi; θ)     i = 1, ..., k, where k is the number of support points
+                μj = η(xj; θ)     j = 1, ..., n
     
     2. Simulate random normal noise for each observation:
                 εj ~ N(0, σ²)   j = 1, ..., n
 
     3. Generate the observed responses by adding the noise to the mean response:
-                yj = μi + εj   j = 1, ..., n
+                yj = μj + εj   j = 1, ..., n
 
 This process is then repeated iteratively to generate multiple datasets for analysis.
 """
@@ -298,26 +297,26 @@ def simulate_responses(x_exact, theta, sigma, rng):
 
 
 """
-We assume:      yj = η(xi; θ) + εj,   εj ~ N(0, σ²),
+We assume:      yj = η(xj; θ) + εj,   εj ~ N(0, σ²),
 
 with independent errors εj and known variance σ² = 0.5. Under this Gaussian noise 
 assumption, estimation of the parameters θ by maximum likelihood is equivalent to
 least squares estimation, in this case, non-linear least squares. In particular, we obtain 
 the MLE θ_hat by minimizing the negative log-likelihood:
 
-                - log L(θ) = n/2 * log(2πσ²) + 1/(2σ²) * ∑(yj - η(xi; θ))²
+                - log L(θ) = n/2 * log(2πσ²) + 1/(2σ²) * ∑(yj - η(xj; θ))²
 
 which is equivalent to minimizing the sum of squared residuals:
 
-                θ_hat = argmin_θ ∑(yj - η(xi; θ))²
+                θ_hat = argmin_θ ∑(yj - η(xj; θ))²
 
 In practice, we can use the `scipy.optimize.minimize` function to perform this 
 optimization, providing the sum of squared residuals as the objective function to minimize. 
 
 Let     RSS(θ) = ∑rj² 
 
-denote the residual sum of squares, where each rj = yj - η(xi; θ) corresponds to how much 
-the observed response yj deviates from the model's predicted mean response at xi for a 
+denote the residual sum of squares, where each rj = yj - η(xj; θ) corresponds to how much 
+the observed response yj deviates from the model's predicted mean response at xj for a 
 given θ. 
 """
 
@@ -328,7 +327,7 @@ def RSS(theta, x_exact, y):
     """
     Compute the residual sum of squares (RSS) for given parameters, design, and observed responses.
 
-                        RSS(θ) = ∑(yj - η(xi; θ))²
+                        RSS(θ) = ∑(yj - η(xj; θ))²
     
     Parameters:
     theta (array-like): Parameter values to evaluate. Must be positive.
@@ -355,7 +354,7 @@ def RSS(theta, x_exact, y):
     # Compute the predicted mean responses using the appropriate model function
     mu = eta(x_exact, theta)
 
-    # Compute residuals [r1, r2, ..., rn] where rj = yj - η(xi; θ)
+    # Compute residuals [r1, r2, ..., rn] where rj = yj - η(xj; θ)
     r = y - mu
 
     # Compute and return the sum of squared residuals
@@ -370,21 +369,13 @@ However, the model parameters must have the following constraints for validity:
     - For the Michaelis-Menten model: V > 0, K > 0
     - For the Emax model: V > 0, K > 0, h > 0
 
-Instead of optimizing over θ directly, we can optimize over a transformed parameter space 
-where the constraints are automatically satisfied. For example, we can optimize over 
-log-transformed parameters. We introduce new parameters φ such that:
+Therefore, we optimize over a transformed parameter space where the constraints 
+are automatically satisfied. In this case, we optimize over log-transformed 
+parameters. We introduce new parameters φ such that:
     - For the Michaelis-Menten model: φ1 = log(V), φ2 = log(K)
     - For the Emax model: φ1 = log(V), φ2 = log(K), φ3 = log(h)
 and then recover the original parameters as:
     - V = exp(φ1), K = exp(φ2), h = exp(φ3)
-
-Because the exponential function always returns positive values, e^φ > 0 for all φ, it 
-ensures that V, K, and h are always positive regardless of the values of φ.
-
-We are minimizing the same residual sum of squares, but using a different coordinate 
-system, and now expressed in terms of φ instead of θ.
-    - Original problem: min_{θ>0} RSS(θ)
-    - Transformed problem (input variable): min_{φ} RSS(e^φ)
 """
 
 " Objective function for optimization - RSS with parameter transformation for constraints "
@@ -393,7 +384,7 @@ def RSS_transformed(phi, x_exact, y):
     """
     Compute the residual sum of squares (RSS) for given transformed parameters, design, and observed responses.
 
-                        RSS(e^φ) = ∑(yj - η(xi; e^φ))²
+                        RSS(e^φ) = ∑(yj - η(xj; e^φ))²
     
     Parameters:
     phi (array-like): Transformed parameter values (log-scale).
@@ -421,12 +412,11 @@ def RSS_transformed(phi, x_exact, y):
 
 """
 Workflow for Optimization:
-Start from an initial guess theta0 (e.g., the true parameters or some reasonable starting 
-point) and transform to the unconstrained space (log-scale): phi0 = log(theta0). Then:
+Start from an initial guess theta0 and transform to the unconstrained space (log-scale): 
+phi0 = log(theta0). Then:
 
-Minimize transformed RSS, with respect to φ, numerically starting from an initial guess phi0. 
-The optimization already fullfills positivity constraints (θ > 0).
-    1. Start from an initial guess phi0 (e.g., the true parameter values or a reasonable guess).
+Minimize transformed RSS, with respect to φ, the optimization already fullfills positivity constraints.
+    1. Start from an initial guess phi0 in the transformed space (log-scale)
     2. Try many candidate values of φ 
     3. Evaluate RSS(e^φ) for each candidate
     4. Iteratively move towards the φ that minimizes RSS
@@ -589,7 +579,7 @@ estimation quality.
 The goal is to compare:
     - PSO optimal design: (x_star, w_star) obtained from PSO optimization
     - Non-optimal design Scenario 1: x = [0, x_max/2, x_max], w = [1/3, 1/3, 1/3]
-    - Non-optimal design Scenario 2: x = [0, x_max/4, 3*x_max/4, x_max], w = [1/4, 1/4, 1/4, 1/4]
+    - Non-optimal design Scenario 2: x = [0, x_max/3, 2*x_max/3, x_max], w = [1/4, 1/4, 1/4, 1/4]
 
 across many runs.
 """
@@ -623,13 +613,13 @@ def run_simulations(theta, n, n_sims, sigma2, n_iter_max, pso_seed=1, base_seed=
     x_nonopt2, w_nonopt2 = nonoptimal_design(x_max, scenario=2)
 
     # Dictionary to store the designs for later use
-    if len(theta) == 2:
+    if len(theta) == 2:     # Michaelis-Menten
         designs = {
             'D-Optimal': (x_star, w_star),
             'Non-Optimal 1': (x_nonopt1, w_nonopt1),
             'Non-Optimal 2': (x_nonopt2, w_nonopt2)
         }
-    else:
+    else:                 # Emax
         designs = {
             'D-Optimal': (x_star, w_star),
             'Non-Optimal 1': (x_nonopt1, w_nonopt1)
@@ -779,8 +769,7 @@ def summary(results, theta, n, n_sims):
 """
 We can also create visualizations to compare the distribution of the estimated parameters
 across simulations for the PSO design versus the non-optimal designs. For example, we can 
-create boxplots or histograms of the estimated parameters for each design, or scatter plots 
-of the estimated parameters against the true parameter values. 
+create boxplots and histograms of the estimated parameters for each design. 
 """
 
 
@@ -829,11 +818,11 @@ def boxplot_estimates(results, theta):
             estimates_nonopt2 = results['Non-Optimal 2']['theta_hats'][:, i]
 
         # Create side-by-side boxplot for the current parameter
-        if len(theta) == 2:
+        if len(theta) == 2:     # Michaelis-Menten: consider all 3
             data = [estimates_pso, estimates_nonopt1, estimates_nonopt2]
             labels = ['D-Optimal', 'Non-Optimal 1', 'Non-Optimal 2']
             colors = [design_colors[label] for label in labels]
-        elif len(theta) == 3:
+        elif len(theta) == 3:   # Emax: only consider the 2 designs
             data = [estimates_pso, estimates_nonopt1]
             labels = ['D-Optimal', 'Non-Optimal 1']
             colors = [design_colors[label] for label in labels]

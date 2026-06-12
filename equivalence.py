@@ -6,7 +6,7 @@ from Loc_D_Opt import compress_design
 """
 Let the directional derivative Φ(x, ξ*) be defined as:
 
-    Φ(x, ξ*) = f(x)^T M(ξ*)^-1 f(x) - p
+    Φ(x, ξ*) = f(x)^T I(ξ*)^-1 f(x) - p
 
 For a nonlinear regression model with parameter dimension p, the General Equivalence 
 Theorem states that a design ξ* is locally D-optimal if and only if the following 
@@ -21,7 +21,7 @@ at the support points with positive weights.
 
 Let d be the sensitivity function for a design ξ* defined as:
 
-    d(x, ξ*) = f(x)^T M(ξ*)^-1 f(x)
+    d(x, ξ*) = f(x)^T I(ξ*)^-1 f(x)
 
 Then,
 
@@ -63,10 +63,10 @@ def d(x_grid, theta, x_star, w_star, gradient, FIM):
     xi = np.concatenate([x_star, w_star])  
 
     # Compute the Fisher Information Matrix M(ξ*) for the design
-    M = FIM(xi, theta)
+    I = FIM(xi, theta)
 
-    # Invert M(ξ*)
-    M_inv = np.linalg.inv(M)
+    # Invert I(ξ*)
+    I_inv = np.linalg.inv(I)
 
     p = len(theta)
 
@@ -77,10 +77,7 @@ def d(x_grid, theta, x_star, w_star, gradient, FIM):
         f_x = np.asarray(gradient(np.array([x], dtype=float), theta), dtype=float)
         # Valid shapes for the formula are (p,) or (p,1)
         if f_x.shape == (1, p):
-            f_x = f_x.T 
-
-        # Or squeeze to convert shape (1,p) to (p,)
-        # f_x = np.squeeze(f_x_raw)
+            f_x = f_x.T   # Transpose to get shape (p,1) if it was (1,p)
 
         # Safety check for correct shape
         if f_x.size != p:
@@ -90,10 +87,7 @@ def d(x_grid, theta, x_star, w_star, gradient, FIM):
             )
         
         # Compute d(x, ξ*) as scalar
-        d_x = float(f_x.T @ M_inv @ f_x) 
-
-        # For squeezed f_x, the line above is equivalent to:
-        # d_x = float(f_x @ M_inv @ f_x)  # (p,) transposed is still (p,)
+        d_x = float(f_x.T @ I_inv @ f_x) 
 
         d_values.append(d_x)
 
@@ -112,7 +106,7 @@ def Phi(x_grid, theta, x_star, w_star, gradient, FIM):
     x_star (array-like): Support points of the design.
     w_star (array-like): Corresponding weights of the support points.
     gradient (callable): Function to compute the gradient f(x) of the model at given x and theta.
-    fim (callable): Function to compute the Fisher Information Matrix M(ξ*) for the design.
+    fim (callable): Function to compute the Fisher Information Matrix I(ξ*) for the design.
     
     Returns:
     array: Directional derivative values Φ(x, ξ*) for each x in the grid.

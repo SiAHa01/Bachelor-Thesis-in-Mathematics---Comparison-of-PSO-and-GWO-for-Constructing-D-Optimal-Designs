@@ -14,13 +14,13 @@ from equivalence import equivalence_check
 
 ### Choose ONE case to test
 
-# Example: Michaelis-Menten case 1
+# Michaelis-Menten parameters
 #theta = np.array([3.0, 0.5])  # Case 1: V=3, K=0.5
 #theta = np.array([7.0, 2.0]) # Case 2: V=7, K=2
 #theta = np.array([5.0, 8.0]) # Case 3: V=5, K=8
 #theta = np.array([5.0, 4.0]) # Case 4: V=5, K=4
 
-# Example: Emax case 1
+# Emax parameters
 #theta = np.array([1.0, 1.0, 0.5])  # Case 1: V=1, K=1, h=0.5, very gradual response
 theta = np.array([2.5, 2.0, 6.0])    # Case 2: V=3, K=1, h=6, very steep response
 #theta = np.array([2.0, 6.0, 2.0])    # Case 3: V=2, K=6, h=2, late saturation (needs large x to approach V)
@@ -50,7 +50,7 @@ after a worker finishes one run, it can take the next submitted run
 """
 
 
-### Equivalence check settings:
+### Equivalence theorem check settings (set as default):
 
 # tol for optimality check: max Φ(x, ξ*) ≤ tol and |Φ(x, ξ*)| ≤ tol at support points
 tol = 5e-3
