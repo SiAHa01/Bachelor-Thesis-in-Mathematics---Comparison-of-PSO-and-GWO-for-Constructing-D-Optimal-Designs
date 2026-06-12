@@ -1,0 +1,2 @@
+# Bachelor-Thesis-in-Mathematics---Comparison-of-PSO-and-GWO-for-Constructing-D-Optimal-Designs
+I am a student at Uppsala University who has written a bachelor thesis where the main objective was to compare the metaheuristic optimization algorithms PSO and GWO in terms of performance when constructing D-optimal designs in non-linear models. This repository contains the codes implemented in this study.
