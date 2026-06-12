@@ -4,7 +4,7 @@ from adjustText import adjust_text
 
 
 """ 
-For the 2-parameter case, the predicted-velocity function of interest is the standard 
+For the 2-parameter case, the mean-response function of interest is the standard 
 Michaelis-Menten function: 
 
     η(x;θ) = (V * x) / (K + x), 
@@ -15,17 +15,17 @@ where θ = (V, K) and x∈[0, x_max] is the design space.
 
 def eta_mm(x, theta):
     """
-    Predicted-velocity function η(x;θ) for Michaelis-Menten model.
+    Mean-response function η(x;θ) for Michaelis-Menten model.
     
     Parameters:
     x : array-like, shape (q,)
-        Design points at which to evaluate the predicted velocity.
+        Design points at which to evaluate the mean function.
     theta : array-like, shape (2,)
         Parameters θ = (V, K).
     
     Returns:
     eta : array, shape (q,)
-        Predicted velocities η(x;θ) evaluated at each x_j.
+        Predicted responses η(x;θ) evaluated at each x_j.
     """
     V, K = theta[0], theta[1]
     eta = (V * x) / (K + x)
@@ -40,8 +40,8 @@ For the 3-parameter case, we consider the more general Emax model:
     
 where θ = (V, K, h).
 
-Mathematically fine, but numerically it can be unstable when h gets large, 
-because x**h or K**h can become extremely large. An equivalent form is:
+However, numerically it can be unstable when h gets large, because 
+x**h or K**h can become extremely large. An equivalent form is:
 
     η(x;θ) = V / (1 + (K/x)^h)
 
@@ -53,9 +53,7 @@ we can rewrite the Emax function as:
 
     η(x;θ) = V / (1 + exp(h * (log(K) - log(x))))
 
-which is a more robust way to compute the Emax function for large h, since it avoids 
-directly computing x^h or K^h and instead uses logarithms and exponentials, which are 
-more numerically stable.
+which is a more robust way to compute the Emax function for large h.
 
 OBS. Original formula:      η(0;θ) = V*0^h / (K^h + 0^h) = 0
 """
@@ -63,24 +61,24 @@ OBS. Original formula:      η(0;θ) = V*0^h / (K^h + 0^h) = 0
 
 def eta_emax(x, theta):
     """
-    Robust version of the predicted-velocity function η(x;θ) for Emax model.
+    Robust version of the mean-response function η(x;θ) for Emax model.
     
     Parameters:
     x : array-like, shape (q,)
-        Design points at which to evaluate the predicted velocity.
+        Design points at which to evaluate the predicted response.
     theta : array-like, shape (3,)
         Parameters θ = (V, K, h).
     
     Returns:
     eta : array, shape (q,)
-        Predicted velocities η(x;θ) evaluated at each x_j.
+        Predicted responses η(x;θ) evaluated at each x_j.
     """
     V, K, h = theta[0], theta[1], theta[2]
 
     # Ensure x is a numpy array for element-wise operations
     x = np.array(x, dtype=float)  
 
-    # Output array to hold predicted velocities
+    # Output array to hold predicted responses
     eta = np.zeros(x.shape, dtype=float) # Initialize eta with zeros, shape (q,)
 
     # Identify which x-values are positive with Boolean array
@@ -98,6 +96,9 @@ def eta_emax(x, theta):
     return eta
 
 
+# Example parameter values for different cases and vizualization of Michelis-Menten curves
+# and Emax curves can be found under if __name__ == "__main__": block at the end of this file
+
 
 """ 
  For Michaelis-Menten:  η(x;θ) = (V * x) / (K + x), where θ = (V, K),
@@ -108,7 +109,7 @@ def eta_emax(x, theta):
 
 def gradient_mm(x, theta):
     """
-    Gradient f(x;θ) for Michaelis-Menten model at each x_j.
+    Gradient f(x;θ) for Michaelis-Menten model at each x_i.
     
     Parameters:
     x : array-like, x = (x_1, x_2, ..., x_k), shape (k,)
@@ -117,8 +118,8 @@ def gradient_mm(x, theta):
     
     Returns:
     F : array, shape (k, 2)
-        Matrix of gradients evaluated at each x_j, where each row 
-        corresponds to f(x_j;θ) = [∂η(x_j;θ)/∂V, ∂η(x_j;θ)/∂K].
+        Matrix of gradients evaluated at each x_i, where each row 
+        corresponds to f(x_i;θ) = [∂η(x_i;θ)/∂V, ∂η(x_i;θ)/∂K].
     """
     V, K = theta[0], theta[1]
 
@@ -126,7 +127,7 @@ def gradient_mm(x, theta):
     d_eta_d_V = x / (K + x)
     d_eta_d_K = -V * x / (K + x)**2
 
-    # Combine into a matrix F where each row is f(x_j;θ)
+    # Combine into a matrix F where each row is f(x_i;θ)
     F = np.stack((d_eta_d_V, d_eta_d_K), axis=1) # stack vectors as columns, shape (k, 2)
 
     return F
@@ -142,7 +143,7 @@ def gradient_mm(x, theta):
 
 def gradient_emax(x, theta):
     """
-    Gradient f(x;θ) for Emax model at each x_j.
+    Gradient f(x;θ) for Emax model at each x_i.
     
     Parameters:
     x : array-like, x = (x_1, x_2, ..., x_k), shape (k,)
@@ -151,8 +152,8 @@ def gradient_emax(x, theta):
     
     Returns:
     F : array, shape (k, 3)
-        Matrix of gradients evaluated at each x_j, where each row 
-        corresponds to f(x_j;θ) = [∂η(x_j;θ)/∂V, ∂η(x_j;θ)/∂K, ∂η(x_j;θ)/∂h].
+        Matrix of gradients evaluated at each x_i, where each row 
+        corresponds to f(x_i;θ) = [∂η(x_i;θ)/∂V, ∂η(x_i;θ)/∂K, ∂η(x_i;θ)/∂h].
     """
     V, K, h = theta[0], theta[1], theta[2]
 
@@ -166,7 +167,7 @@ def gradient_emax(x, theta):
     x_safe = np.where(x > 0, x, 1e-12)  # Replace x=0 with a small positive value for log calculation
     d_eta_d_h = V * x**h * np.log(x_safe/K) * K**h / (K**h + x**h)**2
 
-    # Combine into a matrix F where each row is f(x_j;θ)
+    # Combine into a matrix F where each row is f(x_i;θ)
     F = np.stack((d_eta_d_V, d_eta_d_K, d_eta_d_h), axis=1) # stack vectors as columns, shape (k, 3)
 
     return F
@@ -174,10 +175,10 @@ def gradient_emax(x, theta):
 
 
 """
-The information matrix M(ξ;θ) for an approximate design ξ with support points x_i 
+The information matrix I(ξ;θ) for an approximate design ξ with support points x_i 
 and weights w_i is given by:
 
-    M(ξ;θ) = Σ w_i * f(x_i;θ) * f(x_i;θ)^T
+    I(ξ;θ) = Σ w_i * f(x_i;θ) * f(x_i;θ)^T
 
 Where:
 
@@ -187,10 +188,6 @@ Where:
 - f(x_i;θ) is the gradient vector evaluated at x_i, which we can compute using 
   the function F defined above.
 
-In the Michaelis-Menten case, the resulting M(ξ;θ) is a 2x2 matrix since we have 
-2 parameters (V and K). In the Emax case, it would be a 3x3 matrix since we have 3 
-parameters (V, K, h). 
-
 To compute M(ξ;θ), we can choose which gradient function to use based on the value of p 
 (number of parameters). Then, we compute f(x_i;θ), iterate over each support point x_i,
 and accumulate (sum) the weighted outer products w_i * f(x_i;θ) * f(x_i;θ)^T.
@@ -199,7 +196,7 @@ and accumulate (sum) the weighted outer products w_i * f(x_i;θ) * f(x_i;θ)^T.
 
 def FIM(xi, theta):
     """
-    Compute the Fisher Information Matrix M(ξ;θ).
+    Compute the Fisher Information Matrix I(ξ;θ).
     
     Parameters:
     xi : array-like, shape (2k,)
@@ -208,8 +205,8 @@ def FIM(xi, theta):
         Parameters θ = (V, K) for Michaelis-Menten or (V, K, h) for Emax.
     
     Returns:
-    M_matrix : array, shape (p, p)
-        The Fisher Information Matrix M(ξ;θ).
+    I + np.eye(p)* 1e-10 : array, shape (p, p)
+        The Fisher Information Matrix I(ξ;θ) plus small term for numerical stability.
     """
 
     p = len(theta)  # number of parameters (2 for V, K)
@@ -264,23 +261,18 @@ Locally D-optimal design problem for Michaelis-Menten model:
 The goal is to find the optimal design of the form ξ = {(x_1, x_2, ..., x_k), 
                                                         (w_1, w_2, ..., w_k)},
 x_1, x_2, ..., x_k ∈ [0, x_max], w_1, w_2, ..., w_k ∈ [0, 1], and Σ w_i = 1,
-that minimizes the negative log determinant of the information matrix M(ξ;θ) for a given θ.
-The optimal design approach is to choose k ≤ P(P + 1)/2 support points, which in our case 
-means k ≤ 3 for p = 2 or k ≤ 6 for p = 3. Then, we can choose e.g. k = 3 for a full-rank 
-design, and optimize over the 3 support points and their corresponding weights 
-(done inside PSO wrapper).
+that minimizes the negative log determinant of the information matrix I(ξ;θ) for a given θ.
+We choose k ≤ P(P + 1)/2 support points, which in our case means k ≤ 3 for p = 2 or 
+k ≤ 6 for p = 3. Then, we can choose e.g. k = 3 for a full-rank design, and optimize over 
+the 3 support points and their corresponding weights (done inside PSO/GWO wrapper).
 """
-
-
-# Example parameter values for different cases and vizualization of Michelis-Menten curves
-# and Emax curves can be found under if __name__ == "__main__": block at the end of this file
 
 
 
 """
-Our PSO particle is a vector like this:     ξ = [ x_1, x_2, x_3, w_1, w_2, w_3 ]
+Our PSO particle or GWO position is a vector like this:     ξ = [ x_1, x_2, x_3, w_1, w_2, w_3 ]
 
-However PSO will likely generate particles that do not satisfy the constraints, e.g.:
+However the algorithms will likely generate particles that do not satisfy the constraints, e.g.:
     - weights not summing to 1
     - negative weights
     - x_i outside of [0, x_max]
@@ -350,22 +342,21 @@ the quantity we want to minimize for D-optimality:
 
     Ψ(ξ) = -log(det(I(ξ;θ)))
 
-    
 Moreover, the design space for x is [0, x_max], and we can set 
 
     x_max = 19 * K 
 
-to ensure we cover a wide range of substrate concentrations. This comes from the 
-Michaelis-Menten equation itself:
+to ensure we cover a wide range of substrate concentrations. When x = 19*K, we have 
 
-η(x;θ) = (V * x) / (K + x), divide by V to get η(x;θ)/V = x / (K + x). 
+    η(19*K;θ)/V = 19*K / (K + 19*K) = 19/20 ≈ 0.95, 
 
-When x = 19*K, we have η(19*K;θ)/V = 19*K / (K + 19*K) = 19/20 ≈ 0.95, which is close to 
-the maximum velocity V (95%). So setting x_max = 19*K ensures we explore the region where 
-the response approaches its maximum.
+which is close to the maximum response V (95%). So setting x_max = 19*K ensures we explore 
+the region where the response approaches its maximum.
 
-For the Emax model, we can similarly set x_max = (19*K)^(1/h) to ensure we cover the relevant design space, since the Emax function also approaches its maximum as x becomes large relative to K.
+For the Emax model, we can similarly set x_max = (19*K)^(1/h) to ensure we cover the relevant 
+design space, since the Emax function also approaches its maximum as x becomes large relative to K.
 """
+
 
 " Helper function to determine x_max based on the model and given saturation level (e.g. 95%) "
 
@@ -384,7 +375,7 @@ def get_x_max(theta, q=0.95):
 
 
 def objective_function(design, theta):
-    """Objective function for D-optimal design, which computes -log(det(M(ξ;θ))). 
+    """Objective function for D-optimal design, which computes -log(det(I(ξ;θ))). 
 
     Parameters:
     design : array-like, shape (2k,)
@@ -394,7 +385,7 @@ def objective_function(design, theta):
 
     Returns:
     float
-        The value of -log(det(M(ξ;θ))) for the given design and parameters.
+        The value of -log(det(I(ξ;θ))) for the given design and parameters.
     """
     # Determine x_max
     x_max = get_x_max(theta)  # Set x_max based on K to ensure we cover the relevant design space
@@ -431,7 +422,6 @@ remain stable. So the else: return 1e6 is mainly a safeguard:
 """ Swarm evaluable objective function:
      wraps the objective function and applies it to each particle in the swarm """
 
-
 def swarm_objective_function(designs, theta):
     """
     Wrapper function to evaluate the local D-optimal objective for each 
@@ -467,10 +457,9 @@ def swarm_objective_function(designs, theta):
 PSO will minimize the swarm_objective_function, which evaluates the local D-optimal 
 objective for each particle in the swarm. The PSO algorithm will iteratively update 
 the particles' positions in the design space to find the design ξ that minimizes 
--log(det(M(ξ;θ))), which corresponds to maximizing the determinant of the information 
+-log(det(I(ξ;θ))), which corresponds to maximizing the determinant of the information 
 matrix and thus finding a locally D-optimal design for the given parameter values θ.
 """
-
 
 "Hyperparameters"
 
@@ -614,10 +603,10 @@ def PSO(theta, w=w, c1=c1, c2=c2, n_particles=n_particles, n_iter_max=n_iter_max
     x_star = xi_star[:k]  # Extract support points from the design vector
     w_star = xi_star[k:]  # Extract weights from the design vector
 
-    # Compute final det(M(ξ*;θ)) and -log[det(M(ξ*;θ))] for the best design found
-    M_star = FIM(xi_star, theta)  # Information matrix for the best design
-    detM_star = np.linalg.det(M_star)  # Determinant of the information
-    neg_log_detM_star = -np.log(detM_star)  # Objective function value for the best design
+    # Compute final det(I(ξ*;θ)) and -log[det(I(ξ*;θ))] for the best design found
+    I_star = FIM(xi_star, theta)  # Information matrix for the best design
+    detI_star = np.linalg.det(I_star)  # Determinant of the information
+    neg_log_detI_star = -np.log(detI_star)  # Objective function value for the best design
 
     # Return the results as a dictionary for easy access
     return {
@@ -626,8 +615,8 @@ def PSO(theta, w=w, c1=c1, c2=c2, n_particles=n_particles, n_iter_max=n_iter_max
         'xi_star': xi_star,
         'x_star': x_star,
         'w_star': w_star,
-        'detM_star': detM_star,
-        'neg_log_detM_star': neg_log_detM_star,
+        'detI_star': detI_star,
+        'neg_log_detI_star': neg_log_detI_star,
         'Gbest_scores_history': Gbest_scores_history,
         'n_stop': n_iter,
         'stop_diff': abs(diff)
@@ -645,33 +634,6 @@ Similar to PSO, we will initialize a population of candidate designs (wolves), e
 fitness using the same objective function (negative log determinant of the information 
 matrix), and iteratively update the positions of the wolves based on the positions of the 
 best wolves in the hierarchy (alpha, beta, delta) to converge towards the optimal design. 
-
-Wolves "encircle the prey" (the optimal design) using:
-
-    D = |C * X_leader - X|
-    X_new = X_leader - A * D
-
-Where:
-- X_leader is the position of the best wolf (alpha) or second-best (beta) or 
-  third-best (delta).
-- X is the current position of the wolf being updated.
-- A and C are coefficient vectors that control the movement towards the leader wolves,
-  with A decreasing over iterations to allow for exploration and exploitation:
-  
-    A = 2 * a * r1 - a   and   C = 2 * r2
-
-- r1, r2 ~ U[0, 1], random vectors for stochasticity in the movement
-- a decreases linearly from 2 to 0 over the course of iterations.
-
-Each wolf computes three candidate positions based on the alpha, beta, and delta wolves, 
-and then updates its position to the average of these three candidates:
-
-    X1 = X_alpha - A1 * D_alpha
-    X2 = X_beta - A2 * D_beta
-    X3 = X_delta - A3 * D_delta
-
-    X_new = (X1 + X2 + X3) / 3
-  """
 
 
 " Grey Wolf Optimizer (GWO) implementation "
@@ -858,12 +820,12 @@ def GWO(theta, n_wolves=n_particles, n_iter_max=n_iter_max, conv_tol=conv_tol, s
     x_star = xi_star[:k]  # shape (k,)
     w_star = xi_star[k:]  # shape (k,)
 
-    # Compute the information matrix M(ξ*;θ) for the best design found
-    M_star = FIM(xi_star, theta)  # shape (p, p)
-    # Compute the determinant of the information matrix M(ξ*;θ)
-    detM_star = np.linalg.det(M_star)  # scalar
+    # Compute the information matrix I(ξ*;θ) for the best design found
+    I_star = FIM(xi_star, theta)  # shape (p, p)
+    # Compute the determinant of the information matrix I(ξ*;θ)
+    detI_star = np.linalg.det(I_star)  # scalar
     # Compute the negative log of the determinant for the best design found
-    neg_log_detM_star = -np.log(detM_star)  # scalar
+    neg_log_detI_star = -np.log(detI_star)  # scalar
 
     # Return the results as a dictionary for easy access
     return {
@@ -872,8 +834,8 @@ def GWO(theta, n_wolves=n_particles, n_iter_max=n_iter_max, conv_tol=conv_tol, s
         'xi_star': xi_star,
         'x_star': x_star,
         'w_star': w_star,
-        'detM_star': detM_star,
-        'neg_log_detM_star': neg_log_detM_star,
+        'detI_star': detI_star,
+        'neg_log_detI_star': neg_log_detI_star,
         'alpha_scores_history': alpha_scores_history,
         'alpha_score': alpha_score,
         'beta_score': beta_score,
@@ -1048,22 +1010,16 @@ if __name__ == "__main__":
         result_mm = PSO(theta, w, c1, c2, n_particles, n_iter_max, conv_tol, seed)
         results_mm_pso.append(result_mm)
         print(f"\nResults for θ = {theta}")
-        print(f"\n  Optimal design ξ*:")
-        print(f"      {result_mm['xi_star']}")
-        print(f"\n  Raw support points:")
-        print(f"      {result_mm['x_star']}")
-        print(f"\n  Raw weights:")
-        print(f"      {result_mm['w_star']}")
-        print(f"\n  Determinant of Fisher Information Matrix M(ξ*;θ):")
-        print(f"      det(M(ξ*;θ)) = {result_mm['detM_star']}")
-        print(f"\n  Negative log determinant of M(ξ*;θ):")
-        print(f"      -log(det(M(ξ*;θ))) = {result_mm['neg_log_detM_star']}")
+        print(f"\n  Determinant of Fisher Information Matrix I(ξ*;θ):")
+        print(f"      det(I(ξ*;θ)) = {result_mm['detI_star']}")
+        print(f"\n  Negative log determinant of I(ξ*;θ):")
+        print(f"      -log(det(I(ξ*;θ))) = {result_mm['neg_log_detI_star']}")
         print(f"\n  Number of iterations until convergence: ")
         print(f"      n_stop = {result_mm['n_stop']}")
         print(f"\n  Convergence difference: ")
         print(f"      |diff| = {result_mm['stop_diff']}\n")
 
-        # Clean support points and weights and print cleaned design
+        # Cleaned support points and weights and print cleaned design
         x_star_clean, w_star_clean = compress_design(result_mm['x_star'], result_mm['w_star'])
         print(f"  Cleaned support points x* (merged duplicates, removed near-zero weights and renormalized):")
         print(f"      x* = {x_star_clean}")
@@ -1110,16 +1066,10 @@ if __name__ == "__main__":
                         seed=seed)
         results_mm_gwo.append(result_mm)
         print(f"\nResults for θ = {theta}")
-        print(f"\n  Optimal design ξ*:")
-        print(f"      {result_mm['xi_star']}")
-        print(f"\n  Support points x*:")
-        print(f"      {result_mm['x_star']}")
-        print(f"\n  Weights w*:")
-        print(f"      {result_mm['w_star']}")
-        print(f"\n  Determinant of Fisher Information Matrix M(ξ*;θ):")
-        print(f"      det(M(ξ*;θ)) = {result_mm['detM_star']}")
-        print(f"\n  Negative log determinant of M(ξ*;θ):")
-        print(f"      -log(det(M(ξ*;θ))) = {result_mm['neg_log_detM_star']}")
+        print(f"\n  Determinant of Fisher Information Matrix I(ξ*;θ):")
+        print(f"      det(I(ξ*;θ)) = {result_mm['detI_star']}")
+        print(f"\n  Negative log determinant of I(ξ*;θ):")
+        print(f"      -log(det(I(ξ*;θ))) = {result_mm['neg_log_detI_star']}")
         print(f"\n  Number of iterations until convergence: ")
         print(f"      n_stop = {result_mm['n_stop']}")
         print(f"\n  Convergence difference: ")
@@ -1204,16 +1154,10 @@ if __name__ == "__main__":
         result_emax = PSO(theta, w, c1, c2, n_particles, n_iter_max, conv_tol, seed)
         results_emax.append(result_emax)
         print(f"\nResults for θ = {theta}")
-        print(f"\n  Optimal design ξ*:")
-        print(f"      {result_emax['xi_star']}")
-        print(f"\n  Support points x*:")
-        print(f"      {result_emax['x_star']}")
-        print(f"\n  Weights w*:")
-        print(f"      {result_emax['w_star']}")
-        print(f"\n  Determinant of Fisher Information Matrix M(ξ*;θ):")
-        print(f"      det(M(ξ*;θ)) = {result_emax['detM_star']}")
-        print(f"\n  Negative log determinant of M(ξ*;θ):")
-        print(f"      -log(det(M(ξ*;θ))) = {result_emax['neg_log_detM_star']}")
+        print(f"\n  Determinant of Fisher Information Matrix I(ξ*;θ):")
+        print(f"      det(I(ξ*;θ)) = {result_emax['detI_star']}")
+        print(f"\n  Negative log determinant of I(ξ*;θ):")
+        print(f"      -log(det(I(ξ*;θ))) = {result_emax['neg_log_detI_star']}")
         print(f"\n  Number of iterations until convergence: ")
         print(f"      n_stop = {result_emax['n_stop']}")
         print(f"\n  Convergence difference: ")
@@ -1265,16 +1209,10 @@ if __name__ == "__main__":
                           seed=seed)
         results_emax_gwo.append(result_emax)
         print(f"\nResults for θ = {theta}")
-        print(f"\n  Optimal design ξ*:")
-        print(f"      {result_emax['xi_star']}")
-        print(f"\n  Support points x*:")
-        print(f"      {result_emax['x_star']}")
-        print(f"\n  Weights w*:")
-        print(f"      {result_emax['w_star']}")
-        print(f"\n  Determinant of Fisher Information Matrix M(ξ*;θ):")
-        print(f"      det(M(ξ*;θ)) = {result_emax['detM_star']}")
-        print(f"\n  Negative log determinant of M(ξ*;θ):")
-        print(f"      -log(det(M(ξ*;θ))) = {result_emax['neg_log_detM_star']}")
+        print(f"\n  Determinant of Fisher Information Matrix I(ξ*;θ):")
+        print(f"      det(I(ξ*;θ)) = {result_emax['detI_star']}")
+        print(f"\n  Negative log determinant of I(ξ*;θ):")
+        print(f"      -log(det(I(ξ*;θ))) = {result_emax['neg_log_detI_star']}")
         print(f"\n  Number of iterations until convergence: ")
         print(f"      n_stop = {result_emax['n_stop']}")
         print(f"\n  Convergence difference: ")
